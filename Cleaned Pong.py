@@ -641,6 +641,7 @@ def paddle_bounce_for_left(left_rect, ball_rect):
     global ball_x, ball_vel_x, ball_vel_y
     global p1_meter, holo_left_active, holo_right_active, p1_loki_split_pending
     global ball_invisible, last_ball_x, p1_invis_hide_pending
+    global paddle_hits 
 
     if not (ball_rect.colliderect(left_rect) and ball_vel_x < 0):
         return
@@ -703,6 +704,7 @@ def paddle_bounce_for_right(right_rect, ball_rect):
     global ball_x, ball_vel_x, ball_vel_y
     global p2_meter, holo_left_active, holo_right_active, p2_loki_split_pending
     global ball_invisible, last_ball_x, p2_invis_hide_pending
+    global paddle_hits 
 
     if not (ball_rect.colliderect(right_rect) and ball_vel_x > 0):
         return
@@ -1070,38 +1072,38 @@ while run:
             # Iron Man P1
             if p1_power == "Iron Man" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
-		            p1_ability_uses += 1
-		            p1_last_ability_ms = pygame.time.get_ticks()
+                    p1_ability_uses += 1
+                    p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_ability_until_ms = pygame.time.get_ticks() + IRON_ABILITY_MS
             # Iron Man P2
             if p2_power == "Iron Man" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
-		            p2_ability_uses += 1
-		            p2_last_ability_ms = pygame.time.get_ticks()
+                    p2_ability_uses += 1
+                    p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_ability_until_ms = pygame.time.get_ticks() + IRON_ABILITY_MS
 
             # Loki P1: double-press D -> next hit will split ball
             if p1_power == "Loki" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
-		            p1_ability_uses += 1
-		            p1_last_ability_ms = pygame.time.get_ticks()
+                    p1_ability_uses += 1
+                    p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_loki_split_pending = True
             # Loki P2: double-press Left Arrow
             if p2_power == "Loki" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
-		            p2_ability_uses += 1
-		            p2_last_ability_ms = pygame.time.get_ticks()
+                    p2_ability_uses += 1
+                    p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_loki_split_pending = True
 
             # Quicksilver P1 sweet dreams ability
             if p1_power == "QuickSilver" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
-		            p1_ability_uses += 1
-		            p1_last_ability_ms = pygame.time.get_ticks()
+                    p1_ability_uses += 1
+                    p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_qs_until_ms = pygame.time.get_ticks() + QUICKSILVER_ABILITY_MS
                     p2_qs_freeze_until_ms = pygame.time.get_ticks() + QUICKSILVER_FREEZE_MS
@@ -1110,8 +1112,8 @@ while run:
             # Quicksilver P2 ability
             if p2_power == "QuickSilver" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
-		            p2_ability_uses += 1
-		            p2_last_ability_ms = pygame.time.get_ticks()
+                    p2_ability_uses += 1
+                    p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_qs_until_ms = pygame.time.get_ticks() + QUICKSILVER_ABILITY_MS
                     p1_qs_freeze_until_ms = pygame.time.get_ticks() + QUICKSILVER_FREEZE_MS
@@ -1130,14 +1132,14 @@ while run:
             # Invisible Woman ABILITY (double-press): P1 'D', P2 '<' (Left Arrow)
             if p1_power == "Invisible Woman" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
-		            p1_ability_uses += 1
-		            p1_last_ability_ms = pygame.time.get_ticks()
+                    p1_ability_uses += 1
+                    p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_invis_hide_pending = True
             if p2_power == "Invisible Woman" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
-		            p2_ability_uses += 1
-		            p2_last_ability_ms = pygame.time.get_ticks()
+                    p2_ability_uses += 1
+                    p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_invis_hide_pending = True
 
@@ -1342,5 +1344,3 @@ while run:
 
     pygame.display.update()
     clock.tick(120)
-
-
