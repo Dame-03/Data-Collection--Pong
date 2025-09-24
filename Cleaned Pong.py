@@ -96,7 +96,7 @@ QUICKSILVER_SPEED_BOOST = 3.5   # passive: px/frame over base paddle speed
 QUICKSILVER_ABILITY_MS  = 18000  # 18 seconds
 QUICKSILVER_FREEZE_MS   = 2000   # initial 2s freeze (enemy + real ball)
 QUICKSILVER_HIT_FORCE   = 1.35   # extra hit force multiplier during ability
-QUICKSILVER_MUSIC_PATH = r"C:\Users\smirk\Downloads\sweet_dreams_V1.ogg"
+QUICKSILVER_MUSIC_PATH = r"assets/sweet_dreams_V1.ogg"
 
 # Per-player horizontal offsets for passive (Iron Man only)
 left_x_offset  = 0.0
@@ -1252,4 +1252,5 @@ while run:
 
     pygame.display.update()
     clock.tick(120)
+
 
