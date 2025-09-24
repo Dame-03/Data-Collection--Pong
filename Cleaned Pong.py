@@ -6,7 +6,6 @@ import sys
 import random
 import pygame
 
-# --- logging setup (CSV) ---
 import csv, time, os
 LOG_FILENAME = f"match_log_{time.strftime('%Y%m%d_%H%M%S')}.csv"
 if not os.path.exists(LOG_FILENAME):
@@ -22,6 +21,49 @@ if not os.path.exists(LOG_FILENAME):
             "winner",
             "p1_win_within_8s_after_ability",
             "p2_win_within_8s_after_ability",
+        ])
+
+# --- per-rally tracking (vars + helpers) ---
+# globals for one rally
+rally_index = 0
+rally_start_ms = 0
+paddle_hits = 0
+p1_ability_uses = 0
+p2_ability_uses = 0
+p1_last_ability_ms = None
+p2_last_ability_ms = None
+
+def begin_rally(now_ms: int):
+    """Call this exactly when a new serve begins."""
+    global rally_index, rally_start_ms, paddle_hits, p1_ability_uses, p2_ability_uses
+    global p1_last_ability_ms, p2_last_ability_ms
+    rally_index += 1
+    rally_start_ms = now_ms
+    paddle_hits = 0
+    p1_ability_uses = 0
+    p2_ability_uses = 0
+    p1_last_ability_ms = None
+    p2_last_ability_ms = None
+
+def log_rally_row(winner: str, end_vx: float, end_vy: float, now_ms: int):
+    """Append one CSV row for the rally that just ended."""
+    import math
+    duration_s = (now_ms - rally_start_ms) / 1000.0
+    end_speed = math.hypot(end_vx, end_vy)  # pixels/frame
+    p1_win_within_8s = (winner == "P1") and (p1_last_ability_ms is not None) and ((now_ms - p1_last_ability_ms) <= 8000)
+    p2_win_within_8s = (winner == "P2") and (p2_last_ability_ms is not None) and ((now_ms - p2_last_ability_ms) <= 8000)
+    with open(LOG_FILENAME, "a", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow([
+            rally_index,
+            paddle_hits,
+            f"{end_speed:.3f}",
+            f"{duration_s:.3f}",
+            p1_ability_uses,
+            p2_ability_uses,
+            winner,
+            str(bool(p1_win_within_8s)).lower(),
+            str(bool(p2_win_within_8s)).lower(),
         ])
 
 pygame.mixer.pre_init(44100, -16, 2, 512)
@@ -608,6 +650,7 @@ def paddle_bounce_for_left(left_rect, ball_rect):
 
     # Meter: left player hit +1
     p1_meter = min(METER_MAX, p1_meter + 1)
+    paddle_hits += 1
 
     # normalized contact offset (-1..+1): top=-1, center=0, bottom=+1
     offset = (ball_y - (left_y + paddle_height / 2)) / (paddle_height / 2)
@@ -669,6 +712,7 @@ def paddle_bounce_for_right(right_rect, ball_rect):
 
     # Meter: right player hit +1
     p2_meter = min(METER_MAX, p2_meter + 1)
+    paddle_hits += 1
 
     # normalized contact offset (-1..+1): top=-1, center=0, bottom=+1
     offset = (ball_y - (right_y + paddle_height / 2)) / (paddle_height / 2)
@@ -944,6 +988,7 @@ def reset_ball(right_scored: bool):
     
     state = STATE_SERVE
 
+begin_rally(pygame.time.get_ticks())
 
 def begin_play_if_served(e_key: int):
     """Start rally when the server presses their paddle keys."""
@@ -956,6 +1001,8 @@ def begin_play_if_served(e_key: int):
     elif server == "right" and e_key in (pygame.K_UP, pygame.K_DOWN):
         ball_vel_x, ball_vel_y = serve_vx, serve_vy
         state = STATE_PLAY
+    begin_rally(pygame.time.get_ticks())
+
 
 
 def clamp_paddles_vertical():
@@ -1023,28 +1070,38 @@ while run:
             # Iron Man P1
             if p1_power == "Iron Man" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
+		            p1_ability_uses += 1
+		            p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_ability_until_ms = pygame.time.get_ticks() + IRON_ABILITY_MS
             # Iron Man P2
             if p2_power == "Iron Man" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
+		            p2_ability_uses += 1
+		            p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_ability_until_ms = pygame.time.get_ticks() + IRON_ABILITY_MS
 
             # Loki P1: double-press D -> next hit will split ball
             if p1_power == "Loki" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
+		            p1_ability_uses += 1
+		            p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_loki_split_pending = True
             # Loki P2: double-press Left Arrow
             if p2_power == "Loki" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
+		            p2_ability_uses += 1
+		            p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_loki_split_pending = True
 
             # Quicksilver P1 sweet dreams ability
             if p1_power == "QuickSilver" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
+		            p1_ability_uses += 1
+		            p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_qs_until_ms = pygame.time.get_ticks() + QUICKSILVER_ABILITY_MS
                     p2_qs_freeze_until_ms = pygame.time.get_ticks() + QUICKSILVER_FREEZE_MS
@@ -1053,6 +1110,8 @@ while run:
             # Quicksilver P2 ability
             if p2_power == "QuickSilver" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
+		            p2_ability_uses += 1
+		            p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_qs_until_ms = pygame.time.get_ticks() + QUICKSILVER_ABILITY_MS
                     p1_qs_freeze_until_ms = pygame.time.get_ticks() + QUICKSILVER_FREEZE_MS
@@ -1071,10 +1130,14 @@ while run:
             # Invisible Woman ABILITY (double-press): P1 'D', P2 '<' (Left Arrow)
             if p1_power == "Invisible Woman" and e.key == pygame.K_d and state != STATE_MENU:
                 if is_double_press(e.key) and p1_meter >= METER_MAX:
+		            p1_ability_uses += 1
+		            p1_last_ability_ms = pygame.time.get_ticks()
                     p1_meter = 0
                     p1_invis_hide_pending = True
             if p2_power == "Invisible Woman" and e.key == pygame.K_LEFT and state != STATE_MENU:
                 if is_double_press(e.key) and p2_meter >= METER_MAX:
+		            p2_ability_uses += 1
+		            p2_last_ability_ms = pygame.time.get_ticks()
                     p2_meter = 0
                     p2_invis_hide_pending = True
 
@@ -1204,6 +1267,10 @@ while run:
                 score_right += 1
                 p2_meter = min(METER_MAX, p2_meter + 1)
                 p1_meter = min(METER_MAX, p1_meter + 2)
+                now_ms = pygame.time.get_ticks()
+                end_vx, end_vy = ball_vel_x, ball_vel_y  # capture BEFORE reset 
+                winner = "P2"  
+                log_rally_row(winner, end_vx, end_vy, now_ms)
                 reset_ball(right_scored=True)
 
             elif ball_x - radius > WIDTH:
@@ -1211,6 +1278,10 @@ while run:
                 score_left += 1
                 p1_meter = min(METER_MAX, p1_meter + 1)
                 p2_meter = min(METER_MAX, p2_meter + 2)
+                now_ms = pygame.time.get_ticks()
+                end_vx, end_vy = ball_vel_x, ball_vel_y  # capture BEFORE reset
+                winner = "P1" 
+                log_rally_row(winner, end_vx, end_vy, now_ms)
                 reset_ball(right_scored=False)
 
         else:
