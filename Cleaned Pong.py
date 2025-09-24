@@ -5,6 +5,25 @@ import math
 import sys
 import random
 import pygame
+
+# --- logging setup (CSV) ---
+import csv, time, os
+LOG_FILENAME = f"match_log_{time.strftime('%Y%m%d_%H%M%S')}.csv"
+if not os.path.exists(LOG_FILENAME):
+    with open(LOG_FILENAME, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow([
+            "rally_index",
+            "paddle_hits",
+            "end_ball_speed_px_per_frame",
+            "rally_duration_s",
+            "p1_ability_uses",
+            "p2_ability_uses",
+            "winner",
+            "p1_win_within_8s_after_ability",
+            "p2_win_within_8s_after_ability",
+        ])
+
 pygame.mixer.pre_init(44100, -16, 2, 512)
 
 pygame.init()
